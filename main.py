@@ -80,9 +80,11 @@ def run_discord_bot() -> None:
                 if SEND_DECKLINK:
                     await channel.send(DECKLINK_PREFIX + deckcode)
 
-            elif message_content.startswith("!deckroll") and message_content.__contains__("help"):
+            elif message_content.startswith(
+                "!deckroll"
+            ) and message_content.__contains__("help"):
                 title = "This bot can process default and individual deckrolls"
-                help_message = '''
+                help_message = """
                 This bot can process default and individual deckrolls
 
                 For the default deckroll use: !deckroll
@@ -105,8 +107,10 @@ def run_discord_bot() -> None:
                     - every card only once 100/0/0 with: singleton
                     - every card as 3 of 0/0/100 with: only-three-ofs
                     - individual with: count-chances:<1of-chance>/<2of-chance>/<3of-chance> (e.g. count-chances:10/30/60)
-                '''
-                embed = discord.Embed(title=title, description=help_message, color=0xf90202)
+                """
+                embed = discord.Embed(
+                    title=title, description=help_message, color=0xF90202
+                )
                 await channel.send(embed=embed)
 
             # individual deckroll
@@ -123,9 +127,7 @@ def run_discord_bot() -> None:
                 # card chances
                 card_chances = deepcopy(card_chances_default)
                 # set chances of factions cards so high, that half of the rolled cards are from the faction
-                if message_content.__contains__(
-                    "half-faction-half-neutral"
-                ):
+                if message_content.__contains__("half-faction-half-neutral"):
                     card_chances = deepcopy(card_chances_half_faction_half_neutral)
                 # exclude neutral cards
                 elif message_content.__contains__("only-faction"):
@@ -139,7 +141,9 @@ def run_discord_bot() -> None:
 
                 # count chances and count chances two remaining deck slots
                 count_chances = count_chances_default
-                count_chances_two_remaining_deck_slots = count_chances_two_remaining_deck_slots_default
+                count_chances_two_remaining_deck_slots = (
+                    count_chances_two_remaining_deck_slots_default
+                )
                 if message_content.__contains__("singleton"):
                     count_chances = count_chances_singleton
                     count_chances_two_remaining_deck_slots = (
@@ -148,15 +152,34 @@ def run_discord_bot() -> None:
                 elif message_content.__contains__("only-three-ofs"):
                     count_chances = count_chances_only_three_ofs
                 count_chances_regex = r".*count-chances:(\d+)/(\d+)/(\d+).*"
-                count_chances_regex_match = re.match(count_chances_regex, message_content)
+                count_chances_regex_match = re.match(
+                    count_chances_regex, message_content
+                )
                 if bool(count_chances_regex_match):
                     count_chances_one_ofs = int(count_chances_regex_match.group(1))
                     count_chances_two_ofs = int(count_chances_regex_match.group(2))
                     count_chances_three_ofs = int(count_chances_regex_match.group(3))
-                    if sum([count_chances_one_ofs, count_chances_two_ofs, count_chances_three_ofs]) != 100:
-                        await channel.send("individual count chances found, but their sum is not 100")
-                        raise ValueError("individual count chances found, but their sum is not 100")
-                    count_chances = { 1: count_chances_one_ofs/100, 2: count_chances_two_ofs/100, 3: count_chances_three_ofs/100 }
+                    if (
+                        sum(
+                            [
+                                count_chances_one_ofs,
+                                count_chances_two_ofs,
+                                count_chances_three_ofs,
+                            ]
+                        )
+                        != 100
+                    ):
+                        await channel.send(
+                            "individual count chances found, but their sum is not 100"
+                        )
+                        raise ValueError(
+                            "individual count chances found, but their sum is not 100"
+                        )
+                    count_chances = {
+                        1: count_chances_one_ofs / 100,
+                        2: count_chances_two_ofs / 100,
+                        3: count_chances_three_ofs / 100,
+                    }
 
                 try:
                     deck_roll = Deckroll(
@@ -170,7 +193,9 @@ def run_discord_bot() -> None:
                 try:
                     deckcode = deck_roll.roll_deck()
                 except Exception:
-                    await channel.send("Error while rolling deck occured - probably too small card pool")
+                    await channel.send(
+                        "Error while rolling deck occured - probably too small card pool"
+                    )
                 if SEND_DECKCODE:
                     await channel.send(deckcode)
                 if SEND_DECKLINK:
