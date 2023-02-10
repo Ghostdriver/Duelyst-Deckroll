@@ -7,12 +7,13 @@ from copy import deepcopy
 from factions import MAIN_FACTIONS
 import re
 
-RARITIES = ["Common", "Rare", "Epic", "Legendary"]
-
-# DECKLINK
-SEND_DECKCODE = False
-SEND_DECKLINK = True
-DECKLINK_PREFIX = "https://decklyst.vercel.app/decks/"
+# MAIN OPTIONS
+CREATE_DECKROLL_EXCEL: bool = False
+AMOUNT_DECKS: int = 100
+RUN_DISCORD_BOT: bool = True
+SEND_DECKCODE: bool = False
+SEND_DECKLINK: bool = True
+DECKLINK_PREFIX: str = "https://decklyst.vercel.app/decks/"
 
 # DECKROLL OPTIONS
 
@@ -133,6 +134,7 @@ def run_discord_bot() -> None:
                 elif message_content.__contains__("only-faction"):
                     card_chances = deepcopy(card_chances_only_faction)
                 # exclude by rarity
+                RARITIES = ["Common", "Rare", "Epic", "Legendary"]
                 for rarity in RARITIES:
                     if message_content.__contains__(f"no-{rarity.lower()}"):
                         for collectible_card in all_collectible_cards:
@@ -205,4 +207,15 @@ def run_discord_bot() -> None:
 
 
 if __name__ == "__main__":
-    run_discord_bot()
+    if CREATE_DECKROLL_EXCEL:
+        deck_roll = Deckroll(
+            allowed_factions=all_factions_allowed,
+            card_chances=card_chances_default,
+            count_chances=count_chances_default,
+            count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots_default,
+        )
+        deck_roll.create_deckroll_excel(
+            amount_decks=AMOUNT_DECKS, decklink_prefix=DECKLINK_PREFIX
+        )
+    if RUN_DISCORD_BOT:
+        run_discord_bot()
