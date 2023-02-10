@@ -81,8 +81,8 @@ def run_discord_bot() -> None:
                     await channel.send(DECKLINK_PREFIX + deckcode)
 
             elif message_content.startswith("!deckroll") and message_content.__contains__("help"):
+                title = "This bot can process default and individual deckrolls"
                 help_message = '''
-                Duelyst Deckroll Bot Help
                 This bot can process default and individual deckrolls
 
                 For the default deckroll use: !deckroll
@@ -93,45 +93,46 @@ def run_discord_bot() -> None:
                 (the script checks if the keywords are included, order doesn't matter)
                 Following modifications are available:
                 - factions:
-                    - exclude faction with: no_<faction> (e.g. no_lyonar)
-                    - allow only one faction with: only_<faction> (e.g. only_lyonar)
-                - card_chances:
+                    - exclude faction with: no-<faction> (e.g. no-lyonar)
+                    - allow only one faction with: only-<faction> (e.g. only-lyonar)
+                - card chances:
                     - set chances of factions cards so high, that around half of the rolled cards will be from the rolled faction
-                    with: half_faction_half_neutral
-                    - exclude neutral cards with: only_faction
-                    - exclude by rarity with: no_<rarity> (no_common / no_rare / no_epic / no_legendary)
+                    with: half-faction-half-neutral
+                    - exclude neutral cards with: only-faction
+                    - exclude by rarity with: no-<rarity> (no-common / no-rare / no-epic / no-legendary)
                 - count chances - 1/2/3 ofs:
                     - as said default is 20/30/50
                     - every card only once 100/0/0 with: singleton
-                    - every card as 3 of 0/0/100 with: only_three_ofs
-                    - individual with: count_chances:<1of-chance>/<2of-chance>/<3of-chance> (e.g. count_chances:10/30/60)
+                    - every card as 3 of 0/0/100 with: only-three-ofs
+                    - individual with: count-chances:<1of-chance>/<2of-chance>/<3of-chance> (e.g. count-chances:10/30/60)
                 '''
-                await channel.send(help_message)
+                embed = discord.Embed(title=title, description=help_message, color=0xf90202)
+                await channel.send(embed=embed)
 
             # individual deckroll
             elif message_content.startswith("!deckroll"):
                 # change allowed_factions
                 allowed_factions = deepcopy(all_factions_allowed)
                 for faction in MAIN_FACTIONS:
-                    if message_content.__contains__(f"no_{faction.lower()}"):
+                    if message_content.__contains__(f"no-{faction.lower()}"):
                         allowed_factions.remove(faction)
                 for faction in MAIN_FACTIONS:
-                    if message_content.__contains__(f"only_{faction.lower()}"):
+                    if message_content.__contains__(f"only-{faction.lower()}"):
                         allowed_factions = [faction]
 
                 # card chances
                 card_chances = deepcopy(card_chances_default)
                 # set chances of factions cards so high, that half of the rolled cards are from the faction
                 if message_content.__contains__(
-                    "half_faction_half_neutral"
+                    "half-faction-half-neutral"
                 ):
                     card_chances = deepcopy(card_chances_half_faction_half_neutral)
                 # exclude neutral cards
-                elif message_content.__contains__("only_faction"):
+                elif message_content.__contains__("only-faction"):
                     card_chances = deepcopy(card_chances_only_faction)
                 # exclude by rarity
                 for rarity in RARITIES:
-                    if message_content.__contains__(f"no_{rarity.lower()}"):
+                    if message_content.__contains__(f"no-{rarity.lower()}"):
                         for collectible_card in all_collectible_cards:
                             if collectible_card.rarity == rarity:
                                 card_chances[collectible_card.id] = 0.0
@@ -144,9 +145,9 @@ def run_discord_bot() -> None:
                     count_chances_two_remaining_deck_slots = (
                         count_chances_two_remaining_deck_slots_singleton
                     )
-                elif message_content.__contains__("only_three_ofs"):
+                elif message_content.__contains__("only-three-ofs"):
                     count_chances = count_chances_only_three_ofs
-                count_chances_regex = r".*count_chances:(\d+)/(\d+)/(\d+).*"
+                count_chances_regex = r".*count-chances:(\d+)/(\d+)/(\d+).*"
                 count_chances_regex_match = re.match(count_chances_regex, message_content)
                 if bool(count_chances_regex_match):
                     count_chances_one_ofs = int(count_chances_regex_match.group(1))
