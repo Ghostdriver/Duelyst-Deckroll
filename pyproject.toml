@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "Duelyst II Backend"
+name = "Duelyst II Deckroll"
 version = "0.1.0"
-description = "Backend for everything Duelyst II related"
+description = "Duelyst II Deckroll Script and Bot"
 authors = ["Ghosterdriver"]
 
 [tool.poetry.dependencies]

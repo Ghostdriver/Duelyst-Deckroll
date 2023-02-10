@@ -1,5 +1,5 @@
 import base64
-from typing import Dict, Literal, DefaultDict
+from typing import Literal, DefaultDict
 from CardPool import CardPool
 from CardData import CardData
 from collections import defaultdict
