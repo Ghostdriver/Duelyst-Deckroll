@@ -8,35 +8,21 @@ MAX_DECK_SIZE = 40
 
 
 class Deck:
-    def __init__(self) -> None:
-        self.card_pool: CardPool = CardPool()
+    def __init__(self, card_pool: CardPool) -> None:
+        self.card_pool = card_pool
         self.cards_and_counts: DefaultDict[int, int] = defaultdict(lambda: 0)
-        self.deckcode: str = ""
-        self.faction: Literal[
-            "Lyonar", "Songhai", "Vetruvian", "Abyssian", "Magmar", "Vanar"
-        ] = None
-        self.amount_cards: int = 0
+        self.faction: Literal["Lyonar", "Songhai", "Vetruvian", "Abyssian", "Magmar", "Vanar"] = None
 
-    def get_remaining_cards(self) -> int:
+    @property
+    def amount_cards(self) -> int:
+        return sum(list(self.cards_and_counts.values()))
+
+    @property
+    def remaining_cards(self) -> int:
         return MAX_DECK_SIZE - self.amount_cards
-
-    def create_cards_and_counts_from_deckcode(self, deckcode: str) -> None:
-        """Transforms a deckcode to a dict containing card_id: count"""
-        # strip [<deckname>] from the start of the deckcode
-        if deckcode.startswith("[") and deckcode.__contains__("]"):
-            deckcode = deckcode[deckcode.index("]") + 1 :]
-        # decode
-        concatenated_string_with_counts_and_cards = base64.b64decode(deckcode).decode()
-        list_with_counts_and_cards = concatenated_string_with_counts_and_cards.split(
-            ","
-        )
-        self.cards_and_counts = {}
-        for count_and_card in list_with_counts_and_cards:
-            count, card_id = count_and_card.split(":")
-            self.cards_and_counts[card_id] = count
-
-    def create_deckcode_from_cards_and_counts(self) -> None:
-        """Transforms a dict containing card_id: count to the deckcode"""
+    
+    @property
+    def deckcode(self) -> str:
         concatenated_string_with_counts_and_cards = ""
         for card_id, count in self.cards_and_counts.items():
             if 1 <= count <= 3:
@@ -46,9 +32,20 @@ class Deck:
             concatenated_string_with_counts_and_cards = (
                 concatenated_string_with_counts_and_cards[:-1]
             )
-        self.deckcode = base64.standard_b64encode(
-            concatenated_string_with_counts_and_cards.encode()
-        ).decode()
+        return base64.standard_b64encode(concatenated_string_with_counts_and_cards.encode()).decode()
+
+    def create_cards_and_counts_from_deckcode(self, deckcode: str) -> None:
+        """Transforms a deckcode to a dict containing card_id: count"""
+        # strip [<deckname>] from the start of the deckcode
+        if deckcode.startswith("[") and "]" in deckcode:
+            deckcode = deckcode[deckcode.index("]") + 1 :]
+        # decode
+        concatenated_string_with_counts_and_cards = base64.b64decode(deckcode).decode()
+        list_with_counts_and_cards = concatenated_string_with_counts_and_cards.split(",")
+        self.cards_and_counts = {}
+        for count_and_card in list_with_counts_and_cards:
+            count, card_id = count_and_card.split(":")
+            self.cards_and_counts[card_id] = count
 
     def add_card_and_count(self, card_id: int, count: int) -> None:
         card: CardData = self.card_pool.get_card_data_by_card_id(card_id)
@@ -66,10 +63,6 @@ class Deck:
                 and 1 <= self.cards_and_counts[card.id] + count <= 3
                 and self.amount_cards + count <= MAX_DECK_SIZE
             ):
-                raise ValueError(
-                    "Either the card has the wrong rarity or faction or with the addition the count of the card is not between 1 and 3 or the deck has too much cards after the addition of the card(s)"
-                )
+                raise ValueError("Either the card has the wrong rarity or faction or with the addition the count of the card is not between 1 and 3 or the deck has too much cards after the addition of the card(s)")
         # update deck
         self.cards_and_counts[card.id] += count
-        self.amount_cards += count
-        self.create_deckcode_from_cards_and_counts()
