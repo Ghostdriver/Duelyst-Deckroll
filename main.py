@@ -18,6 +18,9 @@ DECKLINK_PREFIX: str = "https://decklyst.vercel.app/decks/"
 
 # DECKROLL OPTIONS
 
+# amount cards
+amount_cards_default = 40
+
 # faction_chances
 factions_and_weights_default: Dict[str, int] = {}
 for faction in MAIN_FACTIONS:
@@ -54,6 +57,7 @@ count_chances_default: Dict[int, int] = {1: 20, 2: 30, 3: 50}
 count_chances_two_remaining_deck_slots_default: Dict[int, int] = {1: 33, 2: 67}
 default_deck_roll = Deckroll(
     card_pool=card_pool,
+    amount_cards=amount_cards_default,
     factions_and_weights=factions_and_weights_default,
     cards_and_weights=cards_and_weights_default,
     count_chances=count_chances_default,
@@ -61,12 +65,13 @@ default_deck_roll = Deckroll(
 )
 
 # INDIVIDUAL DECKROLL FOR EXCEL SPREADSHEAT - change the values to fit your needs!
+amount_cards = amount_cards_default
 factions_and_weights = deepcopy(factions_and_weights_default)
 cards_and_weights = deepcopy(cards_and_weights_default)
 count_chances = deepcopy(count_chances_default)
 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
-# deck_roll = Deckroll(card_pool=card_pool, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots)
-# print(deck_roll.roll_deck())
+deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots)
+print(deck_roll.roll_deck())
 
 def start_discord_bot() -> None:
     # the following line will fail, because on git is not the discord bot token and I won't share it (security)
@@ -135,11 +140,27 @@ def start_discord_bot() -> None:
 
             # individual deckroll
             elif message_content.startswith("!deckroll"):
+                amount_cards = amount_cards_default
                 factions_and_weights = deepcopy(factions_and_weights_default)
                 cards_and_weights = deepcopy(cards_and_weights_default)
                 count_chances = deepcopy(count_chances_default)
                 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
                 
+                # amount cards
+                MAX_CARDS = 100
+                amount_cards_regex = r".*cards=(\d+).*"
+                amount_cards_regex_match = re.match(amount_cards_regex, message_content)
+                if bool(amount_cards_regex_match):
+                    amount_cards = int(amount_cards_regex_match.group(1))
+                    if amount_cards < 1:
+                        error = f"detected a given amount of cards of {amount_cards}, but the amount of cards can not be less than 1!"
+                        await channel.send(error)
+                        raise ValueError(error)
+                    if amount_cards > MAX_CARDS:
+                        error = f"detected a given amount of cards of {amount_cards}, but the amount of cards can not be greater than {MAX_CARDS}!"
+                        await channel.send(error)
+                        raise ValueError(error)
+
                 # factions
                 MAX_FACTION_WEIGHT = 100000
                 for faction_name in MAIN_FACTIONS:
@@ -209,6 +230,7 @@ def start_discord_bot() -> None:
 
                 deck_roll = Deckroll(
                     card_pool=card_pool,
+                    amount_cards=amount_cards,
                     factions_and_weights=factions_and_weights,
                     cards_and_weights=cards_and_weights,
                     count_chances=count_chances,
@@ -232,6 +254,7 @@ if __name__ == "__main__":
     if CREATE_DECKROLL_EXCEL:
         deck_roll = Deckroll(
             card_pool=card_pool,
+            amount_cards=amount_cards,
             factions_and_weights=factions_and_weights,
             cards_and_weights=cards_and_weights,
             count_chances=count_chances,

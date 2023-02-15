@@ -4,12 +4,11 @@ from CardPool import CardPool
 from CardData import CardData
 from collections import defaultdict
 
-MAX_DECK_SIZE = 40
-
 
 class Deck:
     def __init__(self, card_pool: CardPool) -> None:
         self.card_pool = card_pool
+        self.max_cards = 40
         self.cards_and_counts: DefaultDict[int, int] = defaultdict(lambda: 0)
         self.faction: Literal["Lyonar", "Songhai", "Vetruvian", "Abyssian", "Magmar", "Vanar"] = None
 
@@ -19,7 +18,7 @@ class Deck:
 
     @property
     def remaining_cards(self) -> int:
-        return MAX_DECK_SIZE - self.amount_cards
+        return self.max_cards - self.amount_cards
     
     @property
     def deckcode(self) -> str:
@@ -61,7 +60,7 @@ class Deck:
                 card.rarity in ["Common", "Rare", "Epic", "Legendary"]
                 and card.faction in [self.faction, "Neutral"]
                 and 1 <= self.cards_and_counts[card.id] + count <= 3
-                and self.amount_cards + count <= MAX_DECK_SIZE
+                and self.amount_cards + count <= self.max_cards
             ):
                 raise ValueError("Either the card has the wrong rarity or faction or with the addition the count of the card is not between 1 and 3 or the deck has too much cards after the addition of the card(s)")
         # update deck

@@ -12,12 +12,14 @@ class Deckroll:
     def __init__(
         self,
         card_pool: CardPool,
+        amount_cards: int,
         factions_and_weights: Dict[Literal["Lyonar", "Songhai", "Vetruvian", "Abyssian", "Magmar", "Vanar"], int],
         cards_and_weights: Dict[int, float],
         count_chances: Dict[int, float],
         count_chances_two_remaining_deck_slots: Dict[int, float],
     ) -> None:
         self.card_pool = card_pool
+        self.amount_cards = amount_cards
         self.factions_and_weights = factions_and_weights
         self.cards_and_weights = cards_and_weights
         self.count_chances = count_chances
@@ -46,7 +48,10 @@ class Deckroll:
 
     @retry(stop=stop_after_attempt(10))
     def roll_deck(self) -> str:
-        self.rolled_deck: Deck = Deck(card_pool=self.card_pool)
+        # init deck
+        self.rolled_deck = Deck(card_pool=self.card_pool)
+        self.rolled_deck.max_cards = self.amount_cards
+        # roll deck
         self._roll_faction()
         self._roll_general()
         self._roll_collectible_cards()
