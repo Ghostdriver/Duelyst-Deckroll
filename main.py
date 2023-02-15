@@ -121,6 +121,7 @@ def start_discord_bot() -> None:
                 this default deckroll can be indivualized with the following modifications (combine them as you want,
                 but wrong inputs and e.g. excluding all cards will return an error or just give no response,
                 also if the modification doesn't get noticed by the input parser it just gets ignored):
+                - cards=<number> --> cards=60)
                 - change faction weights (standard weight is 1) with <faction-name>=<number>
                 e.g. exclude region Magmar=0 // make region very very likely Vetruvian=1000
                 the correct faction names have to be used: Lyonar, Songhai, Vetruvian, Abyssian, Magmar, Vanar
