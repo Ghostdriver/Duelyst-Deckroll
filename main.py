@@ -68,7 +68,7 @@ count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_de
 # deck_roll = Deckroll(card_pool=card_pool, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots)
 # print(deck_roll.roll_deck())
 
-def START_DISCORD_BOT() -> None:
+def start_discord_bot() -> None:
     # the following line will fail, because on git is not the discord bot token and I won't share it (security)
     # for personal use I think having the create excel spreadsheat command should be sufficient for most use cases
     # so if the script fails here please set START_DISCORD_BOT = False
@@ -241,4 +241,4 @@ if __name__ == "__main__":
             amount_decks=AMOUNT_DECKS, decklink_prefix=DECKLINK_PREFIX
         )
     if START_DISCORD_BOT:
-        START_DISCORD_BOT()
+        start_discord_bot()
