@@ -15,6 +15,7 @@ START_DISCORD_BOT: bool = True
 SEND_DECKCODE: bool = False
 SEND_DECKLINK: bool = True
 DECKLINK_PREFIX: str = "https://decklyst.vercel.app/decks/"
+LEGACY_DECKLINK_PREFIX = "https://dl.bagoum.com/deckbuilder#"
 
 # DECKROLL OPTIONS
 
@@ -26,22 +27,37 @@ factions_and_weights_default: Dict[str, int] = {}
 for faction in MAIN_FACTIONS:
     factions_and_weights_default[faction] = 1
 
-# card_chances
 # prepare collectible card pool
-card_pool = CardPool()
+card_pool = CardPool(legacy=False)
+legacy_card_pool = CardPool(legacy=True)
+
+# card_chances
 cards_per_faction: Dict[str, int] = {}
 for faction in ALL_FACTIONS:
     cards_per_faction[faction] = len(card_pool.collectible_cards_by_faction[faction])
-# print(cards_per_faction)
+
+legacy_cards_per_faction: Dict[str, int] = {}
+for faction in ALL_FACTIONS:
+    legacy_cards_per_faction[faction] = len(legacy_card_pool.collectible_cards_by_faction[faction])
 
 # default - all cards have the same chance
 cards_and_weights_default: Dict[int, int] = {}
 for collectible_card in card_pool.collectible_cards:
     cards_and_weights_default[collectible_card.id] = 1.0
+
+legacy_cards_and_weights_default: Dict[int, int] = {}
+for collectible_card in legacy_card_pool.collectible_cards:
+    legacy_cards_and_weights_default[collectible_card.id] = 1.0
+
 # adjust faction card chances in a way, that they are equally likely as neutral cards
 cards_and_weights_half_faction_half_neutral: Dict[int, int] = {}
 for collectible_card in card_pool.collectible_cards:
     cards_and_weights_half_faction_half_neutral[collectible_card.id] = cards_per_faction["Neutral"] / cards_per_faction[collectible_card.faction]
+
+legacy_cards_and_weights_half_faction_half_neutral: Dict[int, int] = {}
+for collectible_card in legacy_card_pool.collectible_cards:
+    legacy_cards_and_weights_half_faction_half_neutral[collectible_card.id] = cards_per_faction["Neutral"] / cards_per_faction[collectible_card.faction]
+
 # exclude neutral cards
 cards_and_weights_only_faction: Dict[int, int] = {}
 for collectible_card in card_pool.collectible_cards:
@@ -49,6 +65,13 @@ for collectible_card in card_pool.collectible_cards:
         cards_and_weights_only_faction[collectible_card.id] = 0.0
     else:
         cards_and_weights_only_faction[collectible_card.id] = 1.0
+
+legacy_cards_and_weights_only_faction: Dict[int, int] = {}
+for collectible_card in legacy_card_pool.collectible_cards:
+    if collectible_card.faction == "Neutral":
+        legacy_cards_and_weights_only_faction[collectible_card.id] = 0.0
+    else:
+        legacy_cards_and_weights_only_faction[collectible_card.id] = 1.0
 
 # count chances
 count_chances_default: Dict[int, int] = {1: 20, 2: 30, 3: 50}
@@ -63,15 +86,26 @@ default_deck_roll = Deckroll(
     count_chances=count_chances_default,
     count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots_default
 )
+legacy_default_deck_roll = Deckroll(
+    card_pool=legacy_card_pool,
+    amount_cards=amount_cards_default,
+    factions_and_weights=factions_and_weights_default,
+    cards_and_weights=legacy_cards_and_weights_default,
+    count_chances=count_chances_default,
+    count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots_default
+)
 
 # INDIVIDUAL DECKROLL FOR EXCEL SPREADSHEAT - change the values to fit your needs!
+legacy = False
 amount_cards = amount_cards_default
 factions_and_weights = deepcopy(factions_and_weights_default)
-cards_and_weights = deepcopy(cards_and_weights_default)
+cards_and_weights = deepcopy(legacy_cards_and_weights_half_faction_half_neutral)
 count_chances = deepcopy(count_chances_default)
 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
-deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots)
-print(deck_roll.roll_deck())
+if legacy:
+    deck_roll = Deckroll(card_pool=legacy_card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots)
+else:
+    deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots)
 
 def start_discord_bot() -> None:
     # the following line will fail, because on git is not the discord bot token and I won't share it (security)
@@ -90,16 +124,7 @@ def start_discord_bot() -> None:
         if isinstance(message.content, str):
             message_content: str = message.content.lower()
 
-            # default deckroll
-            if message_content == "!deckroll":
-                deckcode = default_deck_roll.roll_deck()
-                print(f"{message.author.name} {message_content} --> {deckcode}")
-                if SEND_DECKCODE:
-                    await channel.send(deckcode)
-                if SEND_DECKLINK:
-                    await channel.send(DECKLINK_PREFIX + deckcode)
-
-            elif message_content.startswith(
+            if message_content.startswith(
                 "!deckroll"
             ) and "help" in message_content:
                 title = "The Duelyst Deckroll bot can be used for individual deckrolls"
@@ -141,9 +166,16 @@ def start_discord_bot() -> None:
 
             # individual deckroll
             elif message_content.startswith("!deckroll"):
+                # default values + legacy
+                if "legacy" in message_content:
+                    legacy = True
+                    cards_and_weights = deepcopy(legacy_cards_and_weights_default)
+                else:
+                    legacy = False
+                    cards_and_weights = deepcopy(cards_and_weights_default)
+
                 amount_cards = amount_cards_default
                 factions_and_weights = deepcopy(factions_and_weights_default)
-                cards_and_weights = deepcopy(cards_and_weights_default)
                 count_chances = deepcopy(count_chances_default)
                 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
                 
@@ -178,10 +210,17 @@ def start_discord_bot() -> None:
                 # card chances
                 # half-faction-half-neutral
                 if "half-faction-half-neutral" in message_content:
-                    cards_and_weights = deepcopy(cards_and_weights_half_faction_half_neutral)
+                    if legacy:
+                        cards_and_weights = deepcopy(legacy_cards_and_weights_half_faction_half_neutral)
+                    else:
+                        cards_and_weights = deepcopy(cards_and_weights_half_faction_half_neutral)
                 # only faction
                 elif "only-faction" in message_content:
-                    cards_and_weights = deepcopy(cards_and_weights_only_faction)
+                    if legacy:
+                        cards_and_weights = deepcopy(legacy_cards_and_weights_only_faction)
+                    else:
+                        cards_and_weights = deepcopy(cards_and_weights_only_faction)
+
                 # change them based on rarity
                 MAX_CARD_WEIGHT_CHANGE_FACTOR = 10000
                 for rarity in RARITIES:
@@ -193,9 +232,14 @@ def start_discord_bot() -> None:
                             error = f"detected card weight change for rarity {rarity} with the value {card_weight_change_factor} - only values between 0 and {MAX_CARD_WEIGHT_CHANGE_FACTOR} are allowed."
                             await channel.send(error)
                             raise ValueError(error)
-                        for collectible_card in card_pool.collectible_cards:
-                            if collectible_card.rarity.lower() == rarity.lower():
-                                cards_and_weights[collectible_card.id] *= card_weight_change_factor
+                        if legacy:
+                            for collectible_card in legacy_card_pool.collectible_cards:
+                                if collectible_card.rarity.lower() == rarity.lower():
+                                    cards_and_weights[collectible_card.id] *= card_weight_change_factor
+                        else:
+                            for collectible_card in card_pool.collectible_cards:
+                                if collectible_card.rarity.lower() == rarity.lower():
+                                    cards_and_weights[collectible_card.id] *= card_weight_change_factor
                             
                 # count chances
                 count_chances_regex = r".*count-chances=(\d+)/(\d+)/(\d+).*"
@@ -228,41 +272,52 @@ def start_discord_bot() -> None:
                         error = f"detected count-chances-two-remaining-deck-slots (1/2 ofs) {count_chances_two_remaining_deck_slots_one_ofs}/{count_chances_two_remaining_deck_slots_two_ofs} -- the chances must sum up to 100!"
                         await channel.send(error)
                         raise ValueError(error)
+                    
+                if legacy:
+                    deck_roll = Deckroll(
+                        card_pool=legacy_card_pool,
+                        amount_cards=amount_cards,
+                        factions_and_weights=factions_and_weights,
+                        cards_and_weights=cards_and_weights,
+                        count_chances=count_chances,
+                        count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
+                    )
+                else:
+                    deck_roll = Deckroll(
+                        card_pool=card_pool,
+                        amount_cards=amount_cards,
+                        factions_and_weights=factions_and_weights,
+                        cards_and_weights=cards_and_weights,
+                        count_chances=count_chances,
+                        count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
+                    )
 
-                deck_roll = Deckroll(
-                    card_pool=card_pool,
-                    amount_cards=amount_cards,
-                    factions_and_weights=factions_and_weights,
-                    cards_and_weights=cards_and_weights,
-                    count_chances=count_chances,
-                    count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
-                )
                 try:
                     deckcode = deck_roll.roll_deck()
                 except RetryError as e:
                     await channel.send("Even after 10 rolls no valid deck could be rolled for the given settings")
                     raise RetryError("Even after 10 rolls no valid deck could be rolled for the given settings")
                 print(f"{message.author.name}: {message_content} --> {deckcode}")
-                if SEND_DECKCODE:
+                if SEND_DECKCODE or legacy:
                     await channel.send(deckcode)
                 if SEND_DECKLINK:
-                    await channel.send(DECKLINK_PREFIX + deckcode)
+                    if legacy:
+                        await channel.send(LEGACY_DECKLINK_PREFIX + deckcode)
+                    else:
+                        await channel.send(DECKLINK_PREFIX + deckcode)
 
     client.run(token=TOKEN)
 
 
 if __name__ == "__main__":
     if CREATE_DECKROLL_EXCEL:
-        deck_roll = Deckroll(
-            card_pool=card_pool,
-            amount_cards=amount_cards,
-            factions_and_weights=factions_and_weights,
-            cards_and_weights=cards_and_weights,
-            count_chances=count_chances,
-            count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots
-        )
-        deck_roll.roll_deck_spreadsheat(
-            amount_decks=AMOUNT_DECKS, decklink_prefix=DECKLINK_PREFIX
-        )
+        if legacy:
+            deck_roll.roll_deck_spreadsheat(
+                amount_decks=AMOUNT_DECKS, decklink_prefix=LEGACY_DECKLINK_PREFIX
+            )
+        else:
+            deck_roll.roll_deck_spreadsheat(
+                amount_decks=AMOUNT_DECKS, decklink_prefix=DECKLINK_PREFIX
+            )
     if START_DISCORD_BOT:
         start_discord_bot()
