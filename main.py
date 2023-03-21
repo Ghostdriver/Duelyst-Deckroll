@@ -15,7 +15,7 @@ START_DISCORD_BOT: bool = True
 SEND_DECKCODE: bool = False
 SEND_DECKLINK: bool = True
 DECKLINK_PREFIX: str = "https://decklyst.vercel.app/decks/"
-LEGACY_DECKLINK_PREFIX = "https://dl.bagoum.com/deckbuilder#"
+LEGACY_DECKLINK_PREFIX: str = "https://dl.bagoum.com/deckbuilder#"
 
 # DECKROLL OPTIONS
 
@@ -297,7 +297,7 @@ def start_discord_bot() -> None:
                 except RetryError as e:
                     await channel.send("Even after 10 rolls no valid deck could be rolled for the given settings")
                     raise RetryError("Even after 10 rolls no valid deck could be rolled for the given settings")
-                print(f"{message.author.name}: {message_content} --> {deckcode}")
+                # print(f"{message.author.name}: {message_content} --> {deckcode}")
                 if SEND_DECKCODE or legacy:
                     await channel.send(deckcode)
                 if SEND_DECKLINK:
