@@ -1,7 +1,7 @@
 import base64
-from typing import Literal, DefaultDict
+from typing import Literal, Dict, List, DefaultDict
 from CardPool import CardPool
-from CardData import CardData
+from CardData import CardData, CARD_TYPES
 from collections import defaultdict
 
 
@@ -19,6 +19,18 @@ class Deck:
     @property
     def remaining_cards(self) -> int:
         return self.max_cards - self.amount_cards
+    
+    @property
+    def deck_sorted_by_card_type(self) -> Dict[str, List[CardData]]:
+        deck_sorted_by_card_type = {}
+        for card_type in CARD_TYPES:
+            deck_sorted_by_card_type[card_type] = []
+        allowed_cards = self.card_pool.generals_by_faction[self.faction] + self.card_pool.collectible_cards_by_faction[self.faction] + self.card_pool.collectible_cards_by_faction["Neutral"]
+        for card_code in self.cards_and_counts.keys():
+            for card in allowed_cards:
+                if card.id == card_code:
+                    deck_sorted_by_card_type[card.card_type].append(card)
+        return deck_sorted_by_card_type
     
     @property
     def deckcode(self) -> str:
@@ -65,3 +77,17 @@ class Deck:
                 raise ValueError("Either the card has the wrong rarity or faction or with the addition the count of the card is not between 1 and 3 or the deck has too much cards after the addition of the card(s)")
         # update deck
         self.cards_and_counts[card.id] += count
+
+    def get_deck_sorted_by_card_type(self) -> Dict[str, List[CardData]]:
+        deck_sorted_by_card_type = {}
+        for card_type in CARD_TYPES:
+            deck_sorted_by_card_type[card_type] = []
+        allowed_cards = self.card_pool.generals_by_faction[self.faction] + self.card_pool.collectible_cards_by_faction[self.faction] + self.card_pool.collectible_cards_by_faction["Neutral"]
+        for card_code in self.cards_and_counts.keys():
+            for card in allowed_cards:
+                if card.id == card_code:
+                    deck_sorted_by_card_type[card.card_type].append(card)
+        return deck_sorted_by_card_type
+
+    def get_cards_by_card_type_sorted_by_cost_and_alphabetical(self, card_type: Literal["General", "Minion", "Spell", "Artifact"]) -> List[CardData]:
+        return sorted(self.deck_sorted_by_card_type[card_type], key=lambda card: (card.mana, card.name))

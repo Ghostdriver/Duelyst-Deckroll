@@ -1,6 +1,7 @@
 from typing import Dict, List, Optional
 
 RARITIES = ["Common", "Rare", "Epic", "Legendary"]
+CARD_TYPES = ["General", "Minion", "Spell", "Artifact"]
 MAIN_FACTIONS: List[str] = ["Lyonar", "Songhai", "Vetruvian", "Abyssian", "Magmar", "Vanar",]
 ALL_FACTIONS: List[str] = ["Lyonar", "Songhai", "Vetruvian", "Abyssian", "Magmar", "Vanar", "Neutral"]
 

@@ -17,6 +17,7 @@ class Deckroll:
         cards_and_weights: Dict[int, float],
         count_chances: Dict[int, float],
         count_chances_two_remaining_deck_slots: Dict[int, float],
+        min_1_and_2_drops: int
     ) -> None:
         self.card_pool = card_pool
         self.amount_cards = amount_cards
@@ -24,11 +25,12 @@ class Deckroll:
         self.cards_and_weights = cards_and_weights
         self.count_chances = count_chances
         self.count_chances_two_remaining_deck_slots = count_chances_two_remaining_deck_slots
+        self.min_1_and_2_drops = min_1_and_2_drops
 
     def roll_deck_spreadsheat(
         self,
         amount_decks: int,
-        decklink_prefix: str = "https://decklyst.vercel.app/decks/",
+        decklink_prefix: str = "https://decklyst.vercel.app/decks/"
     ) -> str:
         if amount_decks < 0 or amount_decks > 10**7:
             raise ValueError("amount decks out of allowed range")
@@ -55,6 +57,8 @@ class Deckroll:
         self._roll_faction()
         self._roll_general()
         self._roll_collectible_cards()
+        # check deck
+        self._check_amount_of_1_and_2_drops()
         return self.rolled_deck.deckcode
 
     def _roll_faction(self) -> None:
@@ -83,4 +87,14 @@ class Deckroll:
         else:
             count = random.choices(list(self.count_chances.keys()), list(self.count_chances.values()))[0]
         self.rolled_deck.add_card_and_count(card_id=card_id, count=count)
-        
+
+    def _check_amount_of_1_and_2_drops(self) -> None:
+        minions_sorted = self.rolled_deck.get_cards_by_card_type_sorted_by_cost_and_alphabetical(card_type="Minion")
+        amount_1_and_2_drops = 0
+        for minion in minions_sorted:
+            if minion.mana <= 2:
+                amount_1_and_2_drops += self.rolled_deck.cards_and_counts[minion.id]
+            else:
+                break
+        if amount_1_and_2_drops < self.min_1_and_2_drops:
+            raise ValueError("Check failed - the rolled deck has less 1 and 2 drops than needed")

@@ -1,5 +1,6 @@
 from CardPool import CardPool
 from Deckroll import Deckroll
+from Deck import Deck
 import discord
 from discord.ext import commands
 from copy import deepcopy
@@ -78,34 +79,22 @@ count_chances_default: Dict[int, int] = {1: 20, 2: 30, 3: 50}
 
 # count chances two remaining deck slots
 count_chances_two_remaining_deck_slots_default: Dict[int, int] = {1: 33, 2: 67}
-default_deck_roll = Deckroll(
-    card_pool=card_pool,
-    amount_cards=amount_cards_default,
-    factions_and_weights=factions_and_weights_default,
-    cards_and_weights=cards_and_weights_default,
-    count_chances=count_chances_default,
-    count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots_default
-)
-legacy_default_deck_roll = Deckroll(
-    card_pool=legacy_card_pool,
-    amount_cards=amount_cards_default,
-    factions_and_weights=factions_and_weights_default,
-    cards_and_weights=legacy_cards_and_weights_default,
-    count_chances=count_chances_default,
-    count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots_default
-)
+
+# min 1 and 2 drops
+min_1_and_2_drops_default = 0
 
 # INDIVIDUAL DECKROLL FOR EXCEL SPREADSHEAT - change the values to fit your needs!
-legacy = False
+legacy = False 
 amount_cards = amount_cards_default
 factions_and_weights = deepcopy(factions_and_weights_default)
-cards_and_weights = deepcopy(legacy_cards_and_weights_half_faction_half_neutral)
+cards_and_weights = deepcopy(cards_and_weights_half_faction_half_neutral)
 count_chances = deepcopy(count_chances_default)
 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
+min_1_and_2_drops = min_1_and_2_drops_default
 if legacy:
-    deck_roll = Deckroll(card_pool=legacy_card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots)
+    deck_roll = Deckroll(card_pool=legacy_card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops)
 else:
-    deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots)
+    deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops)
 
 def start_discord_bot() -> None:
     # the following line will fail, because on git is not the discord bot token and I won't share it (security)
@@ -146,6 +135,7 @@ def start_discord_bot() -> None:
                 this default deckroll can be indivualized with the following modifications (combine them as you want,
                 but wrong inputs and e.g. excluding all cards will return an error or just give no response,
                 also if the modification doesn't get noticed by the input parser it just gets ignored):
+                - "legacy" for legacy card pool 
                 - cards=<number> --> cards=60)
                 - change faction weights (standard weight is 1) with <faction-name>=<number>
                 e.g. exclude region Magmar=0 // make region very very likely Vetruvian=1000
@@ -158,6 +148,8 @@ def start_discord_bot() -> None:
                 Rarities: common, rare, epic, legendary
                 - count-chances=<number>/<number>/<number> --> count-chances=33/33/34 (1/2/3 ofs)
                 - count-chances-two-remaining-deck-slots=<number>/<number> --> count-chances-two-remaining-deck-slots=50/50 (1/2 ofs)
+                - min-1-and-2-drops=<number> --> min-1-and-2-drops=9 for a deck, that contains at least 9 units, that cost 1 or 2
+                (the deck is still created at random, the deck roll will roll a deck up to 10 times and afterwards check for number of 1 and 2 cost units)
                 """
                 embed = discord.Embed(
                     title=title, description=help_message, color=0xF90202
@@ -178,6 +170,7 @@ def start_discord_bot() -> None:
                 factions_and_weights = deepcopy(factions_and_weights_default)
                 count_chances = deepcopy(count_chances_default)
                 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
+                min_1_and_2_drops = min_1_and_2_drops_default
                 
                 # amount cards
                 MAX_CARDS = 100
@@ -272,7 +265,17 @@ def start_discord_bot() -> None:
                         error = f"detected count-chances-two-remaining-deck-slots (1/2 ofs) {count_chances_two_remaining_deck_slots_one_ofs}/{count_chances_two_remaining_deck_slots_two_ofs} -- the chances must sum up to 100!"
                         await channel.send(error)
                         raise ValueError(error)
-                    
+                
+                # min-1-and-2-drops
+                min_1_and_2_drops_regex = r".*min-1-and-2-drops=(\d+).*"
+                min_1_and_2_drops_regex_regex_match = re.match(min_1_and_2_drops_regex, message_content)
+                if bool(min_1_and_2_drops_regex_regex_match):
+                    min_1_and_2_drops = int(min_1_and_2_drops_regex_regex_match.group(1))
+                    if min_1_and_2_drops > amount_cards:
+                        error = f"The given amount of minimum 1 and 2 drops ({min_1_and_2_drops}) is higher than the given amount of total cards in the deck ({amount_cards})"
+                        await channel.send(error)
+                        raise ValueError(error)
+
                 if legacy:
                     deck_roll = Deckroll(
                         card_pool=legacy_card_pool,
@@ -281,6 +284,7 @@ def start_discord_bot() -> None:
                         cards_and_weights=cards_and_weights,
                         count_chances=count_chances,
                         count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
+                        min_1_and_2_drops=min_1_and_2_drops
                     )
                 else:
                     deck_roll = Deckroll(
@@ -290,7 +294,9 @@ def start_discord_bot() -> None:
                         cards_and_weights=cards_and_weights,
                         count_chances=count_chances,
                         count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
+                        min_1_and_2_drops=min_1_and_2_drops
                     )
+
 
                 try:
                     deckcode = deck_roll.roll_deck()
