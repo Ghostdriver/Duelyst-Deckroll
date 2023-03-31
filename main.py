@@ -9,7 +9,7 @@ from CardData import RARITIES, ALL_FACTIONS, MAIN_FACTIONS
 from tenacity import RetryError
 
 # MAIN OPTIONS
-CREATE_DECKROLL_EXCEL: bool = True
+CREATE_DECKROLL_EXCEL: bool = False
 AMOUNT_DECKS: int = 100
 START_DISCORD_BOT: bool = True
 SEND_DECKCODE: bool = False
