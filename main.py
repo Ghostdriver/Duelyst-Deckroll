@@ -1,6 +1,5 @@
 from CardPool import CardPool
-from Deckroll import Deckroll
-from Deck import Deck
+from Deckroll import Deckroll, DECKROLL_ATTEMPTS, DECKROLL_MODIFICATION_NOT_GIVEN
 import discord
 from discord.ext import commands
 from copy import deepcopy
@@ -10,7 +9,7 @@ from CardData import RARITIES, ALL_FACTIONS, MAIN_FACTIONS
 from tenacity import RetryError
 
 # MAIN OPTIONS
-CREATE_DECKROLL_EXCEL: bool = False
+CREATE_DECKROLL_EXCEL: bool = True
 AMOUNT_DECKS: int = 100
 START_DISCORD_BOT: bool = True
 SEND_DECKCODE: bool = False
@@ -81,27 +80,33 @@ count_chances_default: Dict[int, int] = {1: 20, 2: 30, 3: 50}
 count_chances_two_remaining_deck_slots_default: Dict[int, int] = {1: 33, 2: 67}
 
 # minima of cards
-min_1_and_2_drops_default = 0
-min_total_removal_default = 0
-min_hard_removal_default = 0
-min_soft_removal_default = 0
+min_1_and_2_drops_default = DECKROLL_MODIFICATION_NOT_GIVEN
+max_1_and_2_drops_default = DECKROLL_MODIFICATION_NOT_GIVEN
+min_total_removal_default = DECKROLL_MODIFICATION_NOT_GIVEN
+min_hard_removal_default = DECKROLL_MODIFICATION_NOT_GIVEN
+min_soft_removal_default = DECKROLL_MODIFICATION_NOT_GIVEN
 
 # INDIVIDUAL DECKROLL FOR EXCEL SPREADSHEAT - change the values to fit your needs!
-legacy = False 
-amount_cards = amount_cards_default
+legacy = True
+kierans_ban_list = True
+amount_cards = 40 # amount_cards_default
 factions_and_weights = deepcopy(factions_and_weights_default)
-cards_and_weights = deepcopy(cards_and_weights_half_faction_half_neutral)
+cards_and_weights = deepcopy(legacy_cards_and_weights_default) # deepcopy(cards_and_weights_half_faction_half_neutral)
 count_chances = deepcopy(count_chances_default)
 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
-min_1_and_2_drops = min_1_and_2_drops_default
-min_total_removal = min_total_removal_default
+min_1_and_2_drops = 9 # min_1_and_2_drops_default
+max_1_and_2_drops = 14 # max_1_and_2_drops_default
+min_total_removal = 6 # min_total_removal_default
 min_hard_removal = min_hard_removal_default
 min_soft_removal = min_soft_removal_default
 
 if legacy:
-    deck_roll = Deckroll(card_pool=legacy_card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops, min_total_removal=min_total_removal, min_hard_removal=min_hard_removal, min_soft_removal=min_soft_removal)
+    if kierans_ban_list:
+        for card_id in legacy_card_pool.kierans_legacy_ban_list_card_ids:
+            cards_and_weights[card_id] = 0
+    deck_roll = Deckroll(card_pool=legacy_card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops, max_1_and_2_drops=max_1_and_2_drops, min_total_removal=min_total_removal, min_hard_removal=min_hard_removal, min_soft_removal=min_soft_removal)
 else:
-    deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops)
+    deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops, max_1_and_2_drops=max_1_and_2_drops)
 
 def start_discord_bot() -> None:
     # the following line will fail, because on git is not the discord bot token and I won't share it (security)
@@ -155,14 +160,15 @@ def start_discord_bot() -> None:
                 Rarities: common, rare, epic, legendary
                 - count-chances=<number>/<number>/<number> --> count-chances=33/33/34 (1/2/3 ofs)
                 - count-chances-two-remaining-deck-slots=<number>/<number> --> count-chances-two-remaining-deck-slots=50/50 (1/2 ofs)
-                - min-1-and-2-drops=<number> --> min-1-and-2-drops=9 for a deck, that contains at least 9 units, that cost 1 or 2
-                (the deck is still created at random, the deck roll will roll a deck up to 10 times and afterwards check for number of 1 and 2 cost units)
+                - min-1-and-2-drops=<number>
+                - max-1-and-2-drops=<number>
+                (the deck is still created at random, the deck roll will roll a deck up to 100 times and afterwards check for number of 1 and 2 cost units)
                 - only for legacy:
                     - kierans-ban-list to exclude cards, that can easily scale out of proportion
                     - min-total-removal=<number> --> total removal cards include hard and soft removal cards
                     - min-hard-removal=<number> --> hard removal cards are those, that destroy other cards from hand
                     - min-soft-removal=<number> --> soft removal cards are those, that damage or silence other cards from hand
-                    (the deck is still created at random, the deck roll will roll a deck up to 10 times and afterwards check the amount of remvoal)
+                    (the deck is still created at random, the deck roll will roll a deck up to 100 times and afterwards check the amount of remvoal)
                 """
                 embed = discord.Embed(
                     title=title, description=help_message, color=0xF90202
@@ -184,6 +190,7 @@ def start_discord_bot() -> None:
                 count_chances = deepcopy(count_chances_default)
                 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
                 min_1_and_2_drops = min_1_and_2_drops_default
+                max_1_and_2_drops = max_1_and_2_drops_default
                 min_total_removal = min_total_removal_default
                 min_hard_removal = min_hard_removal_default
                 min_soft_removal = min_soft_removal_default
@@ -291,6 +298,16 @@ def start_discord_bot() -> None:
                         error = f"The given amount of minimum 1 and 2 drops ({min_1_and_2_drops}) is higher than the given amount of total cards in the deck ({amount_cards})"
                         await channel.send(error)
                         raise ValueError(error)
+                    
+                # max-1-and-2-drops
+                max_1_and_2_drops_regex = r".*max-1-and-2-drops=(\d+).*"
+                max_1_and_2_drops_regex_regex_match = re.match(max_1_and_2_drops_regex, message_content)
+                if bool(max_1_and_2_drops_regex_regex_match):
+                    max_1_and_2_drops = int(max_1_and_2_drops_regex_regex_match.group(1))
+                    if max_1_and_2_drops < min_1_and_2_drops:
+                        error = f"The given amount of minimum 1 and 2 drops ({min_1_and_2_drops}) is higher than the given amount of maximum 1 and 2 drops ({max_1_and_2_drops})"
+                        await channel.send(error)
+                        raise ValueError(error)
 
                 if legacy:
                     # kierans-ban-list
@@ -334,6 +351,7 @@ def start_discord_bot() -> None:
                         count_chances=count_chances,
                         count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
                         min_1_and_2_drops=min_1_and_2_drops,
+                        max_1_and_2_drops=max_1_and_2_drops,
                         min_total_removal=min_total_removal,
                         min_hard_removal=min_hard_removal,
                         min_soft_removal=min_soft_removal
@@ -346,14 +364,15 @@ def start_discord_bot() -> None:
                         cards_and_weights=cards_and_weights,
                         count_chances=count_chances,
                         count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
-                        min_1_and_2_drops=min_1_and_2_drops
+                        min_1_and_2_drops=min_1_and_2_drops,
+                        max_1_and_2_drops=max_1_and_2_drops
                     )
 
                 try:
                     deckcode = deck_roll.roll_deck()
                 except RetryError as e:
-                    await channel.send("Even after 10 rolls no valid deck could be rolled for the given settings")
-                    raise RetryError("Even after 10 rolls no valid deck could be rolled for the given settings")
+                    await channel.send(f"Even after {DECKROLL_ATTEMPTS} rolls no valid deck could be rolled for the given settings")
+                    raise RetryError(f"Even after {DECKROLL_ATTEMPTS} rolls no valid deck could be rolled for the given settings")
                 # print(f"{message.author.name}: {message_content} --> {deckcode}")
                 if SEND_DECKCODE or legacy:
                     await channel.send(deckcode)

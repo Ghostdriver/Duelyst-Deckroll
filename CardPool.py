@@ -51,11 +51,13 @@ class CardPool:
                 if card.card_type == "General":
                     self.generals.append(card)
                     self.generals_by_faction[card.faction].append(card)
-                if card.rarity in ["Common", "Rare", "Epic", "Legendary"]:
+                if card.rarity in ["Common", "Rare", "Epic", "Legendary", "Mythron"]:
                     self.collectible_cards.append(card)
                     self.collectible_cards_by_faction[card.faction].append(card)
         print(f"CardPool initialized with {len(self.generals)} generals")
         print(f"CardPool initialized with {len(self.collectible_cards)} collectible cards")
+        for faction, cards in self.collectible_cards_by_faction.items():
+            print(f"CardPool initialized with {len(cards)} cards from faction {faction}")
 
         # Order in the card lists
         # Lyonar
@@ -67,18 +69,18 @@ class CardPool:
         # Neutral
 
         kierans_legacy_ban_list = [
-            "Call to Arms", "Ironcliffe Monument", "Grand Strategos", "Indominus", "Prominence", "Alabaster Titan" \
-            "Seeker Squad", "Hideatsu the Ebon Ox" "Grandmaster Zendo", \
+            "Call to Arms", "Ironcliffe Monument", "Grand Strategos", "Indominus", "Prominence", "Alabaster Titan", \
+            "Reva Eventide", "Seeker Squad", "Hideatsu the Ebon Ox", "Grandmaster Zendo", \
             "Nimbus", "Simulacra Obelysk", "Monolithic Vision", "Khanuum-ka", "Notion of Starless Eternity", "Swarmking Scarab", "Cataclysmic Fault", "Grandmaster Nosh-Rak", \
             "Gate to the Undervault", "Moonrider", "Grandmaster Variax", "Nightmare Operant", "Underlord Xor'Xuul", "Doom", \
-            "Rizen", "Biomimetic Hulk", "Armada", "Dorgon", "Gigaloth", "Progenitor", "Hatefurnace", "Zoetic Charm", "Chrysalis Burst", "Grandmaster Kraigon", "Juggernaut", "Moloki Huntress", \
+            "Ragnora the Relentless", "Rizen", "Biomimetic Hulk", "Armada", "Drogon", "Gigaloth", "Progenitor", "Hatefurnace", "Zoetic Charm", "Chrysalis Burst", "Grandmaster Kraigon", "Juggernaut", "Moloki Huntress", \
             "Draugar Eyolith", "Oak in the Nemeton", "Drake Dowager", "Ice Age", \
             "Bloodbound Mentor", "Bloodsworn Gambler", "Alcuin Fugitive", "Grimes", "Meltdown", "Timekeeper", "Mnemovore", "Blue Conjurer", "Blood Taura", "Grailmaster", "Worldcore Golem"
         ]
 
         # No Neutral Hard Removal
         legacy_hard_removal = [
-            "Aperions Claim", "Decimate", "Martyrdom", \
+            "Aperion's Claim", "Decimate", "Martyrdom", \
             "Eternity Painter", "Bamboozle", "Onyx Bear Seal", \
             "Blood of Air", "Circle of Desiccation", "Entropic Decay", "Wither", \
             "Dark Transformation", "Necrotic Sphere", "Ritual Banishing", \
@@ -101,13 +103,13 @@ class CardPool:
             self.legacy_all_removal_card_ids: List[int] = []
             self.legacy_hard_removal_card_ids: List[int] = []
             self.legacy_soft_removal_card_ids: List[int] = []
-            for collectible_card in self.collectible_cards:
-                if collectible_card.name in kierans_legacy_ban_list:
-                    self.kierans_legacy_ban_list_card_ids.append(collectible_card.id)
-                if collectible_card.name in legacy_hard_removal:
-                    self.legacy_hard_removal_card_ids.append(collectible_card.id)
-                if collectible_card.name in legacy_soft_removal:
-                    self.legacy_soft_removal_card_ids.append(collectible_card.id)
+            for card in self.generals + self.collectible_cards:
+                if card.name in kierans_legacy_ban_list:
+                    self.kierans_legacy_ban_list_card_ids.append(card.id)
+                if card.name in legacy_hard_removal:
+                    self.legacy_hard_removal_card_ids.append(card.id)
+                if card.name in legacy_soft_removal:
+                    self.legacy_soft_removal_card_ids.append(card.id)
             self.legacy_all_removal_card_ids = list(set(self.legacy_hard_removal_card_ids + self.legacy_soft_removal_card_ids))
             print(f"CardPool kierans ban list initialized with {len(self.kierans_legacy_ban_list_card_ids)} card ids from the {len(kierans_legacy_ban_list)} card names")
             print(f"CardPool hard removal list initialized with {len(self.legacy_hard_removal_card_ids)} card ids from the {len(legacy_hard_removal)} card names")
