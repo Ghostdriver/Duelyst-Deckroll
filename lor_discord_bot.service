@@ -1,0 +1,10 @@
+[Unit]
+Description=Duelyst Discord Bot Service
+
+[Service]
+Type=simple
+Restart=always
+ExecStart=sh /home/ubuntu/Duelyst-Deckroll/start_discord_bot.sh
+
+[Install]
+WantedBy=multi-user.target
