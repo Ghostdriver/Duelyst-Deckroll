@@ -78,16 +78,5 @@ class Deck:
         # update deck
         self.cards_and_counts[card.id] += count
 
-    def get_deck_sorted_by_card_type(self) -> Dict[str, List[CardData]]:
-        deck_sorted_by_card_type = {}
-        for card_type in CARD_TYPES:
-            deck_sorted_by_card_type[card_type] = []
-        allowed_cards = self.card_pool.generals_by_faction[self.faction] + self.card_pool.collectible_cards_by_faction[self.faction] + self.card_pool.collectible_cards_by_faction["Neutral"]
-        for card_code in self.cards_and_counts.keys():
-            for card in allowed_cards:
-                if card.id == card_code:
-                    deck_sorted_by_card_type[card.card_type].append(card)
-        return deck_sorted_by_card_type
-
     def get_cards_by_card_type_sorted_by_cost_and_alphabetical(self, card_type: Literal["General", "Minion", "Spell", "Artifact"]) -> List[CardData]:
         return sorted(self.deck_sorted_by_card_type[card_type], key=lambda card: (card.mana, card.name))

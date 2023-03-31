@@ -80,8 +80,11 @@ count_chances_default: Dict[int, int] = {1: 20, 2: 30, 3: 50}
 # count chances two remaining deck slots
 count_chances_two_remaining_deck_slots_default: Dict[int, int] = {1: 33, 2: 67}
 
-# min 1 and 2 drops
+# minima of cards
 min_1_and_2_drops_default = 0
+min_total_removal_default = 0
+min_hard_removal_default = 0
+min_soft_removal_default = 0
 
 # INDIVIDUAL DECKROLL FOR EXCEL SPREADSHEAT - change the values to fit your needs!
 legacy = False 
@@ -91,8 +94,12 @@ cards_and_weights = deepcopy(cards_and_weights_half_faction_half_neutral)
 count_chances = deepcopy(count_chances_default)
 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
 min_1_and_2_drops = min_1_and_2_drops_default
+min_total_removal = min_total_removal_default
+min_hard_removal = min_hard_removal_default
+min_soft_removal = min_soft_removal_default
+
 if legacy:
-    deck_roll = Deckroll(card_pool=legacy_card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops)
+    deck_roll = Deckroll(card_pool=legacy_card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops, min_total_removal=min_total_removal, min_hard_removal=min_hard_removal, min_soft_removal=min_soft_removal)
 else:
     deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops)
 
@@ -136,7 +143,7 @@ def start_discord_bot() -> None:
                 but wrong inputs and e.g. excluding all cards will return an error or just give no response,
                 also if the modification doesn't get noticed by the input parser it just gets ignored):
                 - "legacy" for legacy card pool 
-                - cards=<number> --> cards=60)
+                - cards=<number> --> cards=60
                 - change faction weights (standard weight is 1) with <faction-name>=<number>
                 e.g. exclude region Magmar=0 // make region very very likely Vetruvian=1000
                 the correct faction names have to be used: Lyonar, Songhai, Vetruvian, Abyssian, Magmar, Vanar
@@ -150,6 +157,12 @@ def start_discord_bot() -> None:
                 - count-chances-two-remaining-deck-slots=<number>/<number> --> count-chances-two-remaining-deck-slots=50/50 (1/2 ofs)
                 - min-1-and-2-drops=<number> --> min-1-and-2-drops=9 for a deck, that contains at least 9 units, that cost 1 or 2
                 (the deck is still created at random, the deck roll will roll a deck up to 10 times and afterwards check for number of 1 and 2 cost units)
+                - only for legacy:
+                    - kierans-ban-list to exclude cards, that can easily scale out of proportion
+                    - min-total-removal=<number> --> total removal cards include hard and soft removal cards
+                    - min-hard-removal=<number> --> hard removal cards are those, that destroy other cards from hand
+                    - min-soft-removal=<number> --> soft removal cards are those, that damage or silence other cards from hand
+                    (the deck is still created at random, the deck roll will roll a deck up to 10 times and afterwards check the amount of remvoal)
                 """
                 embed = discord.Embed(
                     title=title, description=help_message, color=0xF90202
@@ -171,6 +184,9 @@ def start_discord_bot() -> None:
                 count_chances = deepcopy(count_chances_default)
                 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
                 min_1_and_2_drops = min_1_and_2_drops_default
+                min_total_removal = min_total_removal_default
+                min_hard_removal = min_hard_removal_default
+                min_soft_removal = min_soft_removal_default
                 
                 # amount cards
                 MAX_CARDS = 100
@@ -277,6 +293,39 @@ def start_discord_bot() -> None:
                         raise ValueError(error)
 
                 if legacy:
+                    # kierans-ban-list
+                    if "kierans-ban-list" in message_content:
+                        for card_id in legacy_card_pool.kierans_legacy_ban_list_card_ids:
+                            cards_and_weights[card_id] = 0
+                    # min-total-removal
+                    min_total_removal_regex = r".*min-total-removal=(\d+).*"
+                    min_total_removal_regex_match = re.match(min_total_removal_regex, message_content)
+                    if bool(min_total_removal_regex_match):
+                        min_total_removal = int(min_total_removal_regex_match.group(1))
+                        if min_total_removal > amount_cards:
+                            error = f"The given amount of total removal cards ({min_total_removal}) is higher than the given amount of total cards in the deck ({amount_cards})"
+                            await channel.send(error)
+                            raise ValueError(error)
+                    # min-hard-removal
+                    min_hard_removal_regex = r".*min-hard-removal=(\d+).*"
+                    min_hard_removal_regex_match = re.match(min_hard_removal_regex, message_content)
+                    if bool(min_hard_removal_regex_match):
+                        min_hard_removal = int(min_hard_removal_regex_match.group(1))
+                        if min_hard_removal > amount_cards:
+                            error = f"The given amount of hard removal cards ({min_hard_removal}) is higher than the given amount of total cards in the deck ({amount_cards})"
+                            await channel.send(error)
+                            raise ValueError(error)
+                    # min-soft-removal
+                    min_soft_removal_regex = r".*min-soft-removal=(\d+).*"
+                    min_soft_removal_regex_match = re.match(min_soft_removal_regex, message_content)
+                    if bool(min_soft_removal_regex_match):
+                        min_soft_removal = int(min_soft_removal_regex_match.group(1))
+                        if min_soft_removal > amount_cards:
+                            error = f"The given amount of soft removal cards ({min_soft_removal}) is higher than the given amount of total cards in the deck ({amount_cards})"
+                            await channel.send(error)
+                            raise ValueError(error)
+                        
+                if legacy:
                     deck_roll = Deckroll(
                         card_pool=legacy_card_pool,
                         amount_cards=amount_cards,
@@ -284,7 +333,10 @@ def start_discord_bot() -> None:
                         cards_and_weights=cards_and_weights,
                         count_chances=count_chances,
                         count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
-                        min_1_and_2_drops=min_1_and_2_drops
+                        min_1_and_2_drops=min_1_and_2_drops,
+                        min_total_removal=min_total_removal,
+                        min_hard_removal=min_hard_removal,
+                        min_soft_removal=min_soft_removal
                     )
                 else:
                     deck_roll = Deckroll(
@@ -296,7 +348,6 @@ def start_discord_bot() -> None:
                         count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
                         min_1_and_2_drops=min_1_and_2_drops
                     )
-
 
                 try:
                     deckcode = deck_roll.roll_deck()
