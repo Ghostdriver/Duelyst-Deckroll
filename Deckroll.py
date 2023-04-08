@@ -1,4 +1,4 @@
-from typing import Dict, List, Literal
+from typing import Dict, List, Literal, Optional
 from CardPool import CardPool
 from CardData import CardData
 import random
@@ -16,6 +16,7 @@ class Deckroll:
         card_pool: CardPool,
         amount_cards: int,
         factions_and_weights: Dict[Literal["Lyonar", "Songhai", "Vetruvian", "Abyssian", "Magmar", "Vanar"], int],
+        legacy_general_cards_and_weights: Optional[Dict[int, float]],
         cards_and_weights: Dict[int, float],
         count_chances: Dict[int, float],
         count_chances_two_remaining_deck_slots: Dict[int, float],
@@ -28,6 +29,7 @@ class Deckroll:
         self.card_pool = card_pool
         self.amount_cards = amount_cards
         self.factions_and_weights = factions_and_weights
+        self.legacy_general_cards_and_weights = legacy_general_cards_and_weights
         self.cards_and_weights = cards_and_weights
         self.count_chances = count_chances
         self.count_chances_two_remaining_deck_slots = count_chances_two_remaining_deck_slots
@@ -77,7 +79,13 @@ class Deckroll:
 
     def _roll_general(self) -> None:
         generals_from_faction = self.card_pool.generals_by_faction[self.rolled_faction]
-        rolled_general = random.choice(generals_from_faction)
+        if self.card_pool.legacy:
+            general_weights: List[float] = []
+            for general_from_faction in generals_from_faction:
+                general_weights.append(self.legacy_general_cards_and_weights[general_from_faction.id])
+            rolled_general = random.choices(generals_from_faction, weights=general_weights)[0]
+        else:
+            rolled_general = random.choice(generals_from_faction)
         self.rolled_deck.add_card_and_count(rolled_general.id, 1)
 
     def _roll_collectible_cards(self) -> None:

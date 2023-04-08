@@ -40,12 +40,17 @@ legacy_cards_per_faction: Dict[str, int] = {}
 for faction in ALL_FACTIONS:
     legacy_cards_per_faction[faction] = len(legacy_card_pool.collectible_cards_by_faction[faction])
 
+# general card weights - default unweighted
+legacy_general_cards_and_weights_default: Dict[int, float] = {}
+for general in legacy_card_pool.generals:
+    legacy_general_cards_and_weights_default[general.id] = 1.0
+
 # default - all cards have the same chance
-cards_and_weights_default: Dict[int, int] = {}
+cards_and_weights_default: Dict[int, float] = {}
 for collectible_card in card_pool.collectible_cards:
     cards_and_weights_default[collectible_card.id] = 1.0
 
-legacy_cards_and_weights_default: Dict[int, int] = {}
+legacy_cards_and_weights_default: Dict[int, float] = {}
 for collectible_card in legacy_card_pool.collectible_cards:
     legacy_cards_and_weights_default[collectible_card.id] = 1.0
 
@@ -91,6 +96,7 @@ legacy = True
 kierans_ban_list = True
 amount_cards = 40 # amount_cards_default
 factions_and_weights = deepcopy(factions_and_weights_default)
+legacy_general_cards_and_weights = deepcopy(legacy_general_cards_and_weights_default)
 cards_and_weights = deepcopy(legacy_cards_and_weights_default) # deepcopy(cards_and_weights_half_faction_half_neutral)
 count_chances = deepcopy(count_chances_default)
 count_chances_two_remaining_deck_slots = deepcopy(count_chances_two_remaining_deck_slots_default)
@@ -104,9 +110,9 @@ if legacy:
     if kierans_ban_list:
         for card_id in legacy_card_pool.kierans_legacy_ban_list_card_ids:
             cards_and_weights[card_id] = 0
-    deck_roll = Deckroll(card_pool=legacy_card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops, max_1_and_2_drops=max_1_and_2_drops, min_total_removal=min_total_removal, min_hard_removal=min_hard_removal, min_soft_removal=min_soft_removal)
+    deck_roll = Deckroll(card_pool=legacy_card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, legacy_general_cards_and_weights=legacy_general_cards_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops, max_1_and_2_drops=max_1_and_2_drops, min_total_removal=min_total_removal, min_hard_removal=min_hard_removal, min_soft_removal=min_soft_removal)
 else:
-    deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops, max_1_and_2_drops=max_1_and_2_drops)
+    deck_roll = Deckroll(card_pool=card_pool, amount_cards=amount_cards_default, factions_and_weights=factions_and_weights, legacy_general_cards_and_weights=None, cards_and_weights=cards_and_weights, count_chances=count_chances, count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots, min_1_and_2_drops=min_1_and_2_drops, max_1_and_2_drops=max_1_and_2_drops)
 
 def start_discord_bot() -> None:
     # the following line will fail, because on git is not the discord bot token and I won't share it (security)
@@ -181,6 +187,7 @@ def start_discord_bot() -> None:
                 if "legacy" in message_content:
                     legacy = True
                     cards_and_weights = deepcopy(legacy_cards_and_weights_default)
+                    legacy_general_cards_and_weights = deepcopy(legacy_general_cards_and_weights_default)
                 else:
                     legacy = False
                     cards_and_weights = deepcopy(cards_and_weights_default)
@@ -313,7 +320,10 @@ def start_discord_bot() -> None:
                     # kierans-ban-list
                     if "kierans-ban-list" in message_content:
                         for card_id in legacy_card_pool.kierans_legacy_ban_list_card_ids:
-                            cards_and_weights[card_id] = 0
+                            if card_id in legacy_general_cards_and_weights.keys():
+                                legacy_general_cards_and_weights[card_id] = 0
+                            else:
+                                cards_and_weights[card_id] = 0
                     # min-total-removal
                     min_total_removal_regex = r".*min-total-removal=(\d+).*"
                     min_total_removal_regex_match = re.match(min_total_removal_regex, message_content)
@@ -347,6 +357,7 @@ def start_discord_bot() -> None:
                         card_pool=legacy_card_pool,
                         amount_cards=amount_cards,
                         factions_and_weights=factions_and_weights,
+                        legacy_general_cards_and_weights=legacy_general_cards_and_weights,
                         cards_and_weights=cards_and_weights,
                         count_chances=count_chances,
                         count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
@@ -361,6 +372,7 @@ def start_discord_bot() -> None:
                         card_pool=card_pool,
                         amount_cards=amount_cards,
                         factions_and_weights=factions_and_weights,
+                        legacy_general_cards_and_weights=None,
                         cards_and_weights=cards_and_weights,
                         count_chances=count_chances,
                         count_chances_two_remaining_deck_slots=count_chances_two_remaining_deck_slots,
