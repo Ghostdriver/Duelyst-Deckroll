@@ -174,6 +174,7 @@ class DiscordBot(discord.Client):
 
             # DRAFT HELP
             elif message_content == "!draft help":
+                title = "Draft help"
                 help_message = """
                 The bot is open source and can be found under:
                 https://github.com/Ghostdriver/Duelyst-Deckroll
