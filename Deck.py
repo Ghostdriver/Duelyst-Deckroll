@@ -3,7 +3,8 @@ from typing import Literal, Dict, List, DefaultDict
 from CardPool import CardPool
 from CardData import CardData, CARD_TYPES
 from collections import defaultdict
-
+import discord
+from constants import DECKLINK_PREFIX, LEGACY_DECKLINK_PREFIX
 
 class Deck:
     def __init__(self, card_pool: CardPool) -> None:
@@ -80,3 +81,27 @@ class Deck:
 
     def get_cards_by_card_type_sorted_by_cost_and_alphabetical(self, card_type: Literal["General", "Minion", "Spell", "Artifact"]) -> List[CardData]:
         return sorted(self.deck_sorted_by_card_type[card_type], key=lambda card: (card.mana, card.name))
+    
+    def create_deck_embed(self) -> discord.Embed:
+        units = self.get_cards_by_card_type_sorted_by_cost_and_alphabetical("Minion")
+        units_formatted = self._card_list_to_string(card_list=units)
+        spells = self.get_cards_by_card_type_sorted_by_cost_and_alphabetical("Spell")
+        spells_formatted = self._card_list_to_string(card_list=spells)
+        artifacts = self.get_cards_by_card_type_sorted_by_cost_and_alphabetical("Artifact")
+        artifacts_formatted = self._card_list_to_string(card_list=artifacts)
+        if self.card_pool.legacy:
+            embed=discord.Embed(title="Drafted Deck", url=LEGACY_DECKLINK_PREFIX + self.deckcode)
+        else:
+            embed=discord.Embed(title="Drafted Deck", url=DECKLINK_PREFIX + self.deckcode)
+        embed.add_field(name="Units", value=units_formatted, inline=True)
+        embed.add_field(name="Spells", value=spells_formatted, inline=True)
+        embed.add_field(name="Artifacts", value=artifacts_formatted, inline=True)
+        return embed
+
+    def _card_list_to_string(self, card_list: List[CardData]) -> str:
+        concatenated_list = ""
+        for card in card_list:
+            for collectible_card in self.card_pool.collectible_cards:
+                if card.id == collectible_card.id:
+                    concatenated_list += f"{self.cards_and_counts[card.id]}x {collectible_card.name}\n"
+        return concatenated_list

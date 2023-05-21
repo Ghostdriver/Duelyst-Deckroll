@@ -1,4 +1,5 @@
 *.key
+*.log
 .venv
 __pycache__
 created_deckroll_excel_files

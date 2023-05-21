@@ -59,66 +59,30 @@ class CardPool:
         for faction, cards in self.collectible_cards_by_faction.items():
             print(f"CardPool initialized with {len(cards)} cards from faction {faction}")
 
-        # Order in the card lists
-        # Lyonar
-        # Songhai
-        # Vetruvian
-        # Abyssian
-        # Magmar
-        # Vanar
-        # Neutral
-
-        kierans_legacy_ban_list = [
-            "Call to Arms", "Ironcliffe Monument", "Grand Strategos", "Indominus", "Prominence", "Alabaster Titan", \
-            "Reva Eventide", "Seeker Squad", "Hideatsu the Ebon Ox", "Grandmaster Zendo", \
-            "Nimbus", "Simulacra Obelysk", "Monolithic Vision", "Khanuum-ka", "Notion of Starless Eternity", "Swarmking Scarab", "Cataclysmic Fault", "Grandmaster Nosh-Rak", \
-            "Gate to the Undervault", "Moonrider", "Grandmaster Variax", "Nightmare Operant", "Underlord Xor'Xuul", "Doom", \
-            "Ragnora the Relentless", "Rizen", "Biomimetic Hulk", "Armada", "Drogon", "Gigaloth", "Progenitor", "Hatefurnace", "Zoetic Charm", "Chrysalis Burst", "Grandmaster Kraigon", "Juggernaut", "Moloki Huntress", \
-            "Draugar Eyolith", "Oak in the Nemeton", "Drake Dowager", "Ice Age", \
-            "Bloodbound Mentor", "Bloodsworn Gambler", "Alcuin Fugitive", "Grimes", "Meltdown", "Timekeeper", "Mnemovore", "Blue Conjurer", "Blood Taura", "Grailmaster", "Worldcore Golem"
-        ]
-
-        # No Neutral Hard Removal
-        legacy_hard_removal = [
-            "Aperion's Claim", "Decimate", "Martyrdom", \
-            "Eternity Painter", "Bamboozle", "Onyx Bear Seal", \
-            "Blood of Air", "Circle of Desiccation", "Entropic Decay", "Wither", \
-            "Dark Transformation", "Necrotic Sphere", "Ritual Banishing", \
-            "Egg Morph", "Metamorphosis", "Natural Selection", "Plasma Storm", \
-            "Aspect of the Ravager", "Aspect of Shim'Zar", "Aspect of the Bear", "Aspect of Ego", "Aspect of the Mountains", "Hailstone Prison"
-        ]
-
-        legacy_soft_removal = [
-            "Sunstrike", "Lucent Beam", "Arclyte Sentinel", "Holy Immolation", "Sky Burial", "Circle of Life", "Tempest", "Draining Wave", "Lasting Judgement", "Sun Bloom", \
-            "Phoenix Fire", "Phoenix Barrage", "Cobra Strike", "Ghost Lightning", "Gotatsu", "Spiral Technique", "Thunderbomb", \
-            "Bone Swarm", "Lost in the Desert", "Sand Trap", "Siphon Energy", \
-            "Breath Of The Unborn", "Betrayal", "Daemonic Lure", "Grasp of Agony", "Spectral Blade", \
-            "Elucidator", "Makantor Warbeast", "Spirit Harvester", \
-            "Chromatic Cold", "Cryogenesis", "Flash Freeze", "Mana Deathgrip", "Enfeeble", "Blinding Snowstorm", \
-            "Ephemeral Shroud", "Repulsor Beast", "Bloodtear Alchemist", "Blistering Skorn", "Bonereaper", "Dancing Blades", "Dust Wailer", "EMP", "Fizzling Mystic", "Frostbone Naga", "Ironclad", "Lightbender", "Red Synja", "Riftwalker", "Rokadoptera", "Saberspine Tiger", "Saberspine Alpha"
-        ]
-
-        if legacy:
-            self.kierans_legacy_ban_list_card_ids: List[int] = []
-            self.legacy_all_removal_card_ids: List[int] = []
-            self.legacy_hard_removal_card_ids: List[int] = []
-            self.legacy_soft_removal_card_ids: List[int] = []
-            for card in self.generals + self.collectible_cards:
-                if card.name in kierans_legacy_ban_list:
-                    self.kierans_legacy_ban_list_card_ids.append(card.id)
-                if card.name in legacy_hard_removal:
-                    self.legacy_hard_removal_card_ids.append(card.id)
-                if card.name in legacy_soft_removal:
-                    self.legacy_soft_removal_card_ids.append(card.id)
-            self.legacy_all_removal_card_ids = list(set(self.legacy_hard_removal_card_ids + self.legacy_soft_removal_card_ids))
-            print(f"CardPool kierans ban list initialized with {len(self.kierans_legacy_ban_list_card_ids)} card ids from the {len(kierans_legacy_ban_list)} card names")
-            print(f"CardPool hard removal list initialized with {len(self.legacy_hard_removal_card_ids)} card ids from the {len(legacy_hard_removal)} card names")
-            print(f"CardPool soft removal list initialized with {len(self.legacy_soft_removal_card_ids)} card ids from the {len(legacy_soft_removal)} card names")
-            print(f"CardPool all removal list initialized with {len(self.legacy_all_removal_card_ids)} card ids")
-
     def get_card_data_by_card_id(self, card_id: int) -> CardData:
         for card in self.all_cards:
             if card.id == card_id:
                 return card
         raise ValueError("No card with the card id {card_id} found")
+    
+    def get_general_by_card_name(self, card_name: str) -> CardData:
+        for card in self.generals:
+            if card_name.lower() == card.name.lower():
+                return card
+        raise ValueError(f"No Card with card name {card_name} found")
+
+    def get_collectible_card_by_card_name(self, card_name: str) -> CardData:
+        for card in self.collectible_cards:
+            if card_name.lower() == card.name.lower():
+                return card
+        raise ValueError(f"No Card with card name {card_name} found")
+    
+    def get_collectible_card_by_card_name_from_faction(self, card_name: str, faction: str) -> CardData:
+        for card in self.collectible_cards_by_faction[faction]:
+            if card_name.lower() == card.name.lower():
+                return card
+        for card in self.collectible_cards_by_faction["Neutral"]:
+            if card_name.lower() == card.name.lower():
+                return card
+        raise ValueError(f"No Card with card name {card_name} found")
         

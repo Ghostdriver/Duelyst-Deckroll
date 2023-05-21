@@ -163,6 +163,14 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "numpy"
+version = "1.24.3"
+description = "Fundamental package for array computing in Python"
+category = "main"
+optional = false
+python-versions = ">=3.8"
+
+[[package]]
 name = "packaging"
 version = "23.0"
 description = "Core utilities for Python packages"
@@ -263,7 +271,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10"
-content-hash = "cabf5e26cf2afc7ada91f73ff1fc50eef2c3038fb745ffc1461f42fd3dcd8cef"
+content-hash = "4dd060238f9df289e525a0dbd1536a6068ebaa8adedd3c84a2b809d3ac5e2d26"
 
 [metadata.files]
 aiohttp = []
@@ -283,6 +291,7 @@ frozenlist = []
 idna = []
 multidict = []
 mypy-extensions = []
+numpy = []
 packaging = []
 pathspec = []
 platformdirs = []

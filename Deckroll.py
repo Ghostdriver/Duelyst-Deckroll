@@ -6,6 +6,7 @@ from Deck import Deck
 import xlsxwriter
 import datetime
 from tenacity import retry, stop_after_attempt
+from constants import DECKLINK_PREFIX, LEGACY_DECKLINK_PREFIX
 
 DECKROLL_ATTEMPTS = 100
 DECKROLL_MODIFICATION_NOT_GIVEN = -1
@@ -16,34 +17,26 @@ class Deckroll:
         card_pool: CardPool,
         amount_cards: int,
         factions_and_weights: Dict[Literal["Lyonar", "Songhai", "Vetruvian", "Abyssian", "Magmar", "Vanar"], int],
-        legacy_general_cards_and_weights: Optional[Dict[int, float]],
         cards_and_weights: Dict[int, float],
         count_chances: Dict[int, float],
         count_chances_two_remaining_deck_slots: Dict[int, float],
         min_1_and_2_drops: int = DECKROLL_MODIFICATION_NOT_GIVEN,
         max_1_and_2_drops: int = DECKROLL_MODIFICATION_NOT_GIVEN,
-        min_total_removal: int = DECKROLL_MODIFICATION_NOT_GIVEN,
-        min_hard_removal: int = DECKROLL_MODIFICATION_NOT_GIVEN,
-        min_soft_removal: int = DECKROLL_MODIFICATION_NOT_GIVEN
     ) -> None:
         self.card_pool = card_pool
         self.amount_cards = amount_cards
         self.factions_and_weights = factions_and_weights
-        self.legacy_general_cards_and_weights = legacy_general_cards_and_weights
         self.cards_and_weights = cards_and_weights
         self.count_chances = count_chances
         self.count_chances_two_remaining_deck_slots = count_chances_two_remaining_deck_slots
         self.min_1_and_2_drops = min_1_and_2_drops
         self.max_1_and_2_drops = max_1_and_2_drops
-        self.min_total_removal = min_total_removal
-        self.min_hard_removal = min_hard_removal
-        self.min_soft_removal = min_soft_removal
 
     def roll_deck_spreadsheat(
         self,
         amount_decks: int,
-        decklink_prefix: str = "https://decklyst.vercel.app/decks/"
     ) -> str:
+        decklink_prefix = LEGACY_DECKLINK_PREFIX if self.card_pool.legacy else DECKLINK_PREFIX
         if amount_decks < 0 or amount_decks > 10**7:
             raise ValueError("amount decks out of allowed range")
         start_time = datetime.datetime.now()
@@ -71,7 +64,6 @@ class Deckroll:
         self._roll_collectible_cards()
         # check deck
         self._check_amount_of_1_and_2_drops()
-        self._check_amount_removal()
         return self.rolled_deck.deckcode
 
     def _roll_faction(self) -> None:
@@ -79,13 +71,7 @@ class Deckroll:
 
     def _roll_general(self) -> None:
         generals_from_faction = self.card_pool.generals_by_faction[self.rolled_faction]
-        if self.card_pool.legacy:
-            general_weights: List[float] = []
-            for general_from_faction in generals_from_faction:
-                general_weights.append(self.legacy_general_cards_and_weights[general_from_faction.id])
-            rolled_general = random.choices(generals_from_faction, weights=general_weights)[0]
-        else:
-            rolled_general = random.choice(generals_from_faction)
+        rolled_general = random.choice(generals_from_faction)
         self.rolled_deck.add_card_and_count(rolled_general.id, 1)
 
     def _roll_collectible_cards(self) -> None:
@@ -120,32 +106,3 @@ class Deckroll:
             raise ValueError("Check failed - the rolled deck has less 1 and 2 drops than needed")
         if self.max_1_and_2_drops != DECKROLL_MODIFICATION_NOT_GIVEN and amount_1_and_2_drops > self.max_1_and_2_drops:
             raise ValueError("Check failed - the rolled deck has more 1 and 2 drops than needed")
-
-        
-    def _check_amount_removal(self) -> None:
-        if self.card_pool.legacy:
-            # total removal
-            if self.min_total_removal != DECKROLL_MODIFICATION_NOT_GIVEN:
-                amount_total_removal_cards = 0
-                for card_id, count in self.rolled_deck.cards_and_counts.items():
-                    if card_id in self.card_pool.legacy_all_removal_card_ids:
-                        amount_total_removal_cards += count
-                if amount_total_removal_cards < self.min_total_removal:
-                    raise ValueError("Check failed - the rolled deck has less total removal cards than needed")
-            # hard removal
-            if self.min_hard_removal != DECKROLL_MODIFICATION_NOT_GIVEN:
-                amount_hard_removal_cards = 0
-                for card_id, count in self.rolled_deck.cards_and_counts.items():
-                    if card_id in self.card_pool.legacy_hard_removal_card_ids:
-                        amount_hard_removal_cards += count
-                if amount_hard_removal_cards < self.min_hard_removal:
-                    raise ValueError("Check failed - the rolled deck has less hard removal cards than needed")
-            # soft removal
-            if self.min_soft_removal != DECKROLL_MODIFICATION_NOT_GIVEN:
-                amount_soft_removal_cards = 0
-                for card_id, count in self.rolled_deck.cards_and_counts.items():
-                    if card_id in self.card_pool.legacy_soft_removal_card_ids:
-                        amount_soft_removal_cards += count
-                if amount_soft_removal_cards < self.min_soft_removal:
-                    raise ValueError("Check failed - the rolled deck has less soft removal cards than needed")
-            
